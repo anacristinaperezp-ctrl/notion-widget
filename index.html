@@ -1,258 +1,81 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Notion Mini Calendar</title>
-  <style>
-    :root{
-      --bg: transparent;
-      --card: rgba(255,255,255,.92);
-      --border: rgba(17,24,39,.12);
-      --text: #111827;
-      --muted: rgba(17,24,39,.55);
-      --nav: #111827;
-      --shadow: 0 10px 30px rgba(0,0,0,.10);
-      --radius: 16px;
-      --cellRadius: 12px;
-    }
-    /* Dark theme */
-    [data-theme="dark"]{
-      --bg: transparent;
-      --card: rgba(17,24,39,.70);
-      --border: rgba(255,255,255,.12);
-      --text: rgba(255,255,255,.92);
-      --muted: rgba(255,255,255,.55);
-      --nav: rgba(255,255,255,.12);
-      --shadow: 0 12px 40px rgba(0,0,0,.35);
-    }
+<meta charset="UTF-8">
+<style>
+body {
+    background: #1f1f1f;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
 
-    html, body {
-      height: 100%;
-      background: transparent !important;
-    }
+.calendar {
+    background: #2a2a2a;
+    border-radius: 20px;
+    width: 320px;
+    padding: 20px;
+    color: #e5e5e5;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
 
-    body{
-      margin: 0;
-      padding: 0;
-      background: transparent !important;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color: var(--text);
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      overflow:hidden;
-    }
+.header {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
 
-    /* This is the widget "card" */
-    .calendar{
-      width: min(420px, 100%);
-      border-radius: var(--radius);
-      overflow: hidden;
-      background: var(--card);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-    }
+.days, .dates {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+}
 
-    .header{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding: 14px 16px;
-      background: rgba(0,0,0,.06);
-    }
-    [data-theme="dark"] .header{
-      background: rgba(255,255,255,.08);
-    }
+.days div {
+    font-size: 12px;
+    opacity: 0.6;
+    margin-bottom: 10px;
+}
 
-    .btn{
-      appearance:none;
-      border:0;
-      background: transparent;
-      color: var(--text);
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-      transition: background .15s ease, transform .05s ease;
-    }
-    .btn:hover{ background: rgba(0,0,0,.06); }
-    [data-theme="dark"] .btn:hover{ background: rgba(255,255,255,.10); }
-    .btn:active{ transform: scale(.98); }
+.dates div {
+    padding: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
 
-    .title{
-      font-weight: 750;
-      letter-spacing: .2px;
-      font-size: 20px;
-      line-height: 1.1;
-    }
+.dates div:hover {
+    background: #3a3a3a;
+}
 
-    .grid{
-      padding: 12px 14px 14px;
-      display:grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 8px;
-    }
-
-    .dow{
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--muted);
-      text-align:center;
-      padding: 6px 0 10px;
-      letter-spacing: .18em;
-    }
-
-    .day{
-      height: 44px;
-      border-radius: var(--cellRadius);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-weight: 650;
-      color: var(--text);
-      user-select:none;
-      position: relative;
-    }
-
-    .muted{
-      color: rgba(17,24,39,.30);
-      font-weight: 650;
-    }
-    [data-theme="dark"] .muted{
-      color: rgba(255,255,255,.22);
-    }
-
-    .today{
-      outline: 2px solid rgba(99,102,241,.40);
-      background: rgba(99,102,241,.12);
-    }
-    [data-theme="dark"] .today{
-      outline: 2px solid rgba(99,102,241,.55);
-      background: rgba(99,102,241,.18);
-    }
-
-    /* optional: smaller padding if Notion iframe is tight */
-    @media (max-width: 420px){
-      .calendar{ border-radius: 14px; }
-      .grid{ padding: 10px 12px 12px; gap: 6px; }
-      .day{ height: 40px; }
-      .title{ font-size: 18px; }
-    }
-  </style>
+.selected {
+    background: #444444;
+    font-weight: 600;
+}
+</style>
 </head>
-
 <body>
-  <div class="calendar" id="cal" aria-label="Mini calendar widget">
-    <div class="header">
-      <button class="btn" id="prev" aria-label="Previous month" title="Previous">
-        <!-- left chevron -->
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
 
-      <div class="title" id="label">Month YYYY</div>
-
-      <button class="btn" id="next" aria-label="Next month" title="Next">
-        <!-- right chevron -->
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
+<div class="calendar">
+    <div class="header">December 2026</div>
+    <div class="days">
+        <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
     </div>
+    <div class="dates">
+        <div></div><div></div><div></div><div class="selected">1</div>
+        <div>2</div><div>3</div><div>4</div>
+        <div>5</div><div>6</div><div>7</div>
+        <div>8</div><div>9</div><div>10</div><div>11</div>
+        <div>12</div><div>13</div><div>14</div>
+        <div>15</div><div>16</div><div>17</div><div>18</div>
+        <div>19</div><div>20</div><div>21</div>
+        <div>22</div><div>23</div><div>24</div><div>25</div>
+        <div>26</div><div>27</div><div>28</div>
+        <div>29</div><div>30</div><div>31</div>
+    </div>
+</div>
 
-    <div class="grid" id="grid"></div>
-  </div>
-
-  <script>
-    // Params:
-    // ?start=monday  (default sunday)
-    // ?theme=dark    (default auto)
-    const params = new URLSearchParams(location.search);
-    const startMonday = (params.get("start") || "").toLowerCase() === "monday";
-    const themeParam = (params.get("theme") || "").toLowerCase();
-
-    const calEl = document.getElementById("cal");
-    const gridEl = document.getElementById("grid");
-    const labelEl = document.getElementById("label");
-
-    // theme
-    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const theme = themeParam === "dark" ? "dark" : themeParam === "light" ? "light" : (prefersDark ? "dark" : "light");
-    if(theme === "dark") document.documentElement.setAttribute("data-theme", "dark");
-    else document.documentElement.removeAttribute("data-theme");
-
-    // state
-    const today = new Date();
-    let viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
-
-    const monthFmt = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
-
-    function startOfGrid(date){
-      const first = new Date(date.getFullYear(), date.getMonth(), 1);
-      const dow = first.getDay(); // 0 Sun .. 6 Sat
-      const shift = startMonday ? ((dow + 6) % 7) : dow; // Monday=0, or Sunday=0
-      first.setDate(first.getDate() - shift);
-      return first;
-    }
-
-    function render(){
-      gridEl.innerHTML = "";
-
-      // DOW row
-      const dowsSun = ["S","M","T","W","T","F","S"];
-      const dowsMon = ["M","T","W","T","F","S","S"];
-      const dows = startMonday ? dowsMon : dowsSun;
-
-      for(const d of dows){
-        const el = document.createElement("div");
-        el.className = "dow";
-        el.textContent = d;
-        gridEl.appendChild(el);
-      }
-
-      // Label
-      labelEl.textContent = monthFmt.format(viewDate).replace(/^\w/, c => c.toUpperCase());
-
-      // Days (6 weeks = 42 cells)
-      const start = startOfGrid(viewDate);
-      for(let i=0;i<42;i++){
-        const d = new Date(start);
-        d.setDate(start.getDate() + i);
-
-        const cell = document.createElement("div");
-        cell.className = "day";
-
-        const isThisMonth = d.getMonth() === viewDate.getMonth();
-        if(!isThisMonth) cell.classList.add("muted");
-
-        const isToday =
-          d.getFullYear() === today.getFullYear() &&
-          d.getMonth() === today.getMonth() &&
-          d.getDate() === today.getDate();
-
-        if(isToday) cell.classList.add("today");
-
-        cell.textContent = d.getDate();
-        gridEl.appendChild(cell);
-      }
-    }
-
-    document.getElementById("prev").addEventListener("click", () => {
-      viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
-      render();
-    });
-
-    document.getElementById("next").addEventListener("click", () => {
-      viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
-      render();
-    });
-
-    render();
-  </script>
 </body>
 </html>
