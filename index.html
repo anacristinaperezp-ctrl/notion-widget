@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notion Calendar Widget</title>
+  <style>
+    :root{
+      --bg:#ffffff;
+      --card:#ffffff;
+      --border:#e5e7eb;
+      --text:#111827;
+      --muted:#cbd5e1;
+      --nav:#1f2b3a;
+      --shadow: 0 10px 30px rgba(0,0,0,.08);
+      --radius:14px;
+    }
+    [data-theme="dark"]{
+      --bg:#0b1220;
+      --card:#0f172a;
+      --border:#1f2937;
+      --text:#e5e7eb;
+      --muted:#64748b;
+      --nav:#111827;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+
+    html, body{
+      height:100%;
+    }
+    body{
+      margin:0;
+      background:transparent; /* para verse bien dentro de Notion */
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:12px;
+      box-sizing:border-box;
+      color:var(--text);
+    }
+
+    .calendar{
+      width: min(420px, 100%);
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      overflow:hidden;
+      box-shadow:var(--shadow);
+    }
+
+    .cal-header{
+      background:var(--nav);
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:12px 10px;
+      gap:10px;
+    }
+    .cal-title{
+      font-weight:750;
+      font-size:18px;
+      letter-spacing:.2px;
+      text-align:center;
+      flex:1;
+      user-select:none;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .nav-btn{
+      appearance:none;
+      border:0;
+      background:transparent;
+      color:#fff;
+      font-size:22px;
+      cursor:pointer;
+      width:42px;
+      height:34px;
+      border-radius:10px;
+    }
+    .nav-btn:hover{ background:rgba(255,255,255,.12); }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(7, 1fr);
+      padding:12px;
+      gap:8px;
+    }
+    .dow{
+      font-weight:700;
+      font-size:12px;
+      text-align:center;
+      opacity:.9;
+      user-select:none;
+    }
+    .day{
+      height:38px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:10px;
+      font-size:14px;
+      user-select:none;
+      border:1px solid transparent;
+    }
+    .day.muted{ color:var(--muted); }
+    .day.today{
+      background:var(--nav);
+      color:#fff;
+      font-weight:800;
+    }
+    .day:hover{
+      border-color: rgba(99,102,241,.25);
+    }
+    .footer{
+      padding:0 12px 12px;
+      font-size:11px;
+      color:var(--muted);
+    }
+    .footer code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="calendar" id="cal" role="application" aria-label="Calendario">
+    <div class="cal-header">
+      <button class="nav-btn" id="prev" aria-label="Mes anterior">‹</button>
+      <div class="cal-title" id="label">Mes Año</div>
+      <button class="nav-btn" id="next" aria-label="Mes siguiente">›</button>
+    </div>
+    <div class="grid" id="grid" aria-live="polite"></div>
+    <div class="footer">
+      Params: <code>?start=monday</code> <code>?theme=dark</code>
+    </div>
+  </div>
+
+  <script>
+    const qs = new URLSearchParams(location.search);
+    const start = (qs.get("start") || "sunday").toLowerCase(); // sunday|monday
+    const theme = (qs.get("theme") || "light").toLowerCase();  // light|dark
+
+    document.documentElement.setAttribute("data-theme", theme === "dark" ? "dark" : "light");
+
+    const label = document.getElementById("label");
+    const grid  = document.getElementById("grid");
+    const prev  = document.getElementById("prev");
+    const next  = document.getElementById("next");
+
+    let viewDate = new Date();
+    viewDate.setDate(1);
+
+    function sameDay(a,b){
+      return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+    }
+
+    function getDowLabels(){
+      // Notion-like compact labels
+      const sundayFirst = ["S","M","T","W","T","F","S"];
+      const mondayFirst = ["M","T","W","T","F","S","S"];
+      return start === "monday" ? mondayFirst : sundayFirst;
+    }
+
+    function render(){
+      grid.innerHTML = "";
+
+      const fmt = new Intl.DateTimeFormat(undefined, { month:"long", year:"numeric" });
+      label.textContent = fmt.format(viewDate).replace(/^\w/, c => c.toUpperCase());
+
+      const dow = getDowLabels();
+      for(const d of dow){
+        const el = document.createElement("div");
+        el.className = "dow";
+        el.textContent = d;
+        grid.appendChild(el);
+      }
+
+      const year = viewDate.getFullYear();
+      const month = viewDate.getMonth();
+      const first = new Date(year, month, 1);
+
+      // cálculo del día inicial en la grilla según start day
+      const nativeDow = first.getDay(); // 0=Sun..6=Sat
+      const offset = (start === "monday")
+        ? (nativeDow === 0 ? 6 : nativeDow - 1)
+        : nativeDow;
+
+      const startDate = new Date(year, month, 1 - offset);
+      const today = new Date();
+
+      // 6 semanas fijas = 42 días para que se vea consistente
+      for(let i=0;i<42;i++){
+        const d = new Date(startDate);
+        d.setDate(startDate.getDate() + i);
+
+        const cell = document.createElement("div");
+        cell.className = "day";
+        cell.textContent = d.getDate();
+
+        if(d.getMonth() !== month) cell.classList.add("muted");
+        if(sameDay(d, today)) cell.classList.add("today");
+
+        grid.appendChild(cell);
+      }
+    }
+
+    prev.addEventListener("click", () => {
+      viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1);
+      render();
+    });
+    next.addEventListener("click", () => {
+      viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1);
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
+
